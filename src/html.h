@@ -3,25 +3,81 @@ const char index_html[]  = R"rawliteral(
 <html>
 	<style>
 		body {
-		text-align: center;
-		font-family: "Trebuchet MS", Arial;
-		margin-left:auto;
-		margin-right:auto;
+			display: flex;
+			text-align: center;
+			color: white;
+			font-family: "Trebuchet MS", Arial;
+			margin-left:auto;
+			margin-right:auto;
+			background-image: url("./assets/iu.png");
+			background-repeat: no-repeat;
+			background-size: cover;
 		}
-		.slider {
-		width: 300px;
+		.container{
+			position: relative;
+			height:100%;
+			width:60%;
+			margin:0%
+		}
+		
+		input[type=range] {
+			-webkit-appearance: none;
+		}
+		#myRange::-webkit-slider-thumb{
+			height: 100px;
+			width: 60px;
+			border-radius: 3px;
+			background-color: transparent;
+			background: url(assets/cartridge.png) center no-repeat;
+			transform: rotate(90deg);
+			background-size:contain ;
+			cursor: pointer;
+			-webkit-appearance: none;
+		}
+		.slider{
+			position: relative;
+			width: 64.5%;
+			height: 0.5%;
+			top: 50%;
+			right: 0%;
+			left:12%;
+			z-index: 3;
+		}
+		#vinyl{
+			filter:drop-shadow(30px 10px 8px rgba(0, 0, 0, 0.4));
+			float:left;
+			height:100%;
+			width:100%
+		}
+		.right-container{
+			width: 40%;
+			margin:0px;
+			padding-top: 20%;
+		}
+		.form{
+			background: #3B484E;
+			margin:10%;
+			padding:20%;
+			padding-top:10%;
+			padding-bottom:40%;
+			border-radius: 2%;
+			box-shadow: 10px 10px 5px black;
 		}
 	</style>
 	<body>
-		<h1>Value: <span id="servoPos">90</span></h1>
-
-		<div>
-			<input type="range" min="0" max="180" value="90" class="slider" id="myRange" onchange=getSliderValue(this.value)>
+		<div class="container">
+			<input type="range" min="123" max="169" value="145" class="slider" id="myRange" onchange=getSliderValue(this.value)>
+			<img src="./assets/vinyl.png" id="vinyl">
 		</div>
-		<button type="button" id="needle_pos_button">Change Needle Pos</button>
-		<h3>Current Arm-status</h3>
-		<button onclick="toggleArmButtonText()"><span id="toggleText">OFF</span></button>
-		<button id="toggle_button">Change Status</button>
+		<div class="right-container">
+			<div class="form">			
+				<h1>Value: <span id="servoPos">90</span></h1>
+				<button type="button" id="needle_pos_button">Change Needle Pos</button>
+				<h3>Current Arm-status</h3>
+				<button onclick="toggleArmButtonText()"><span id="toggleText">OFF</span></button>
+				<button id="toggle_button">Change Status</button>
+			</div>
+		</div>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script>
 			servo_pos = document.getElementById("servoPos");
