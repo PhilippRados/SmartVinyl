@@ -76,8 +76,6 @@ void moveServoToValue(int servo_pos){
   int moving_pos = start_value_servo_push - servo_pos; // has to be above 20
 
   for (int current_value = start_value_servo_pull; current_value < end_pos; current_value++){
-    Serial.println("Inside servo moving");
-    Serial.println(current_value);
     needle_slider_pull_servo.write(current_value);
     delay(30);
   }
@@ -85,7 +83,6 @@ void moveServoToValue(int servo_pos){
 
   Serial.println("Now backwards");
   for (int current_value = end_pos; current_value > start_value_servo_pull; current_value-= 4){
-    Serial.println("Inside second servo");
     needle_slider_pull_servo.write(current_value);
     delay(15);
   }
