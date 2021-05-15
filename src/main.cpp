@@ -6,7 +6,9 @@
 //servo inputs on esp32
 #define NEEDLE_SERVO_PIN_PULL 13
 #define NEEDLE_SERVO_PIN_PUSH 12
-#define SWITCH_SERVO_PIN 14
+#define SWITCH_SERVO_PIN_UP 14
+#define SWITCH_SERVO_PIN_DOWN 27
+
 
 const char* ssid = "Vodafone-5B96";
 const char* password =  "TfaEhytbqapgHeqT";
@@ -14,8 +16,10 @@ const char* password =  "TfaEhytbqapgHeqT";
 WiFiServer server(80);
 Servo needle_slider_pull_servo;
 Servo needle_slider_push_servo;
-Servo button_press_servo;
-Servo switch_servo;
+Servo switch_servo_up;
+Servo switch_servo_down;
+
+bool MUSIC_PLAYING = false;
 
 void setup_wifi(){
   int not_connected_counter = 0;
@@ -46,25 +50,48 @@ void setup(){
   Serial.begin(9600);
   needle_slider_pull_servo.attach(NEEDLE_SERVO_PIN_PULL);
   needle_slider_push_servo.attach(NEEDLE_SERVO_PIN_PUSH);
-  //switch_servo.attach(SWITCH_SERVO_PIN);
-  //button_press_servo.attach(BUTTON_SERVO_PIN);
+  switch_servo_up.attach(SWITCH_SERVO_PIN_UP);
+  switch_servo_down.attach(SWITCH_SERVO_PIN_DOWN);
 
   setup_wifi();
   server.begin();
 }
 
 void moveArmToggleServo(String toggle_state){
-  //arm-toggle-servo
-}
+  int start_value_switch_down = 0;
+  int start_value_switch_up = 180;
+  int end_pos_down = 80;
+  int end_pos_up = 40;
 
-void slowerServoMove(int start, int end, Servo servo){
-  for (int current_value = start; current_value < end; current_value++){
-    Serial.println("Inside servo moving");
-    Serial.println(current_value);
-    needle_slider_pull_servo.write(current_value);
-    delay(10);
+  Serial.println("toggle");
+  if (toggle_state == "ON"){
+    Serial.println("toggle on");
+
+    for (int current_value = start_value_switch_down; current_value < end_pos_down; current_value++){
+      switch_servo_down.write(current_value);
+      delay(30);
+    }
+    delay(100);
+
+    for (int current_value = end_pos_up; current_value > start_value_switch_down; current_value-=4){
+      switch_servo_down.write(current_value);
+      delay(15);
+    }
+  } else if (toggle_state == "OFF") {
+
+    //switch_servo_up.write(end_pos_down);
+    //switch_servo_up.write(0);
+    for (int current_value = start_value_switch_up; current_value > end_pos_up; current_value--){
+      switch_servo_up.write(current_value);
+      delay(30);
+    }
+    delay(100);
+    for (int current_value = end_pos_up; current_value < start_value_switch_up; current_value+= 4){
+      switch_servo_up.write(current_value);
+      delay(15);
+    }
+    delay(100);
   }
-  delay(100);
 }
 
 void moveServoToValue(int servo_pos){
@@ -75,6 +102,7 @@ void moveServoToValue(int servo_pos){
   int end_pos = 105;
   int moving_pos = start_value_servo_push - servo_pos; // has to be above 20
 
+  //this code didnt work inside of functions for whatever reasons so its a repetitious
   for (int current_value = start_value_servo_pull; current_value < end_pos; current_value++){
     needle_slider_pull_servo.write(current_value);
     delay(30);
@@ -126,7 +154,8 @@ void loop(){
           pos2 = header.indexOf("&");
 
           arm_toggle = header.substring(pos1+1,pos2);
-          //moveArmToggleServo(arm_toggle);
+          
+          moveArmToggleServo(arm_toggle);
           //Serial.printf("Toggle-mode :%s\n",arm_toggle);
 
         } else if (request_type = "needlevalue"){

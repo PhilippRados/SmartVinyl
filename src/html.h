@@ -1,5 +1,6 @@
 const char index_html[]  = R"rawliteral(
 
+
 <html>
 	<style>
 		body {
@@ -66,6 +67,10 @@ const char index_html[]  = R"rawliteral(
 			border-radius: 2%;
 			box-shadow: 10px 10px 5px black;
 		}
+		#pause_button{
+			height: 8%;
+			padding: 5%;
+		}
 	</style>
 	<body>
 		<div class="container">
@@ -77,8 +82,7 @@ const char index_html[]  = R"rawliteral(
 				<h1>Value: <span id="servoPos">123</span></h1>
 				<button type="button" id="needle_pos_button">Change Needle Pos</button>
 				<h3>Current Arm-status</h3>
-				<button onclick="toggleArmButtonText()"><span id="toggleText">OFF</span></button>
-				<button id="toggle_button">Change Status</button>
+				<img src="https://i.ibb.co/Gd5KCBk/start.png" id="pause_button">
 			</div>
 		</div>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -86,37 +90,38 @@ const char index_html[]  = R"rawliteral(
 			servo_pos = document.getElementById("servoPos");
 			toggle_text = document.getElementById("toggleText");
 
+			$('#pause_button').click(function(){
+				if ($('#pause_button').attr('src') == 'https://i.ibb.co/Gd5KCBk/start.png'){
+					$('#pause_button').attr('src',"https://i.ibb.co/BzqqHZK/pause.png");
+
+					$.get("?armstatus=" + "ON" + "&", function(data, status){
+						alert("Data: " + "ON");
+					});
+				} else {
+					$('#pause_button').attr('src',"https://i.ibb.co/Gd5KCBk/start.png");
+
+					$.get("?armstatus=" + "OFF" + "&", function(data, status){
+						alert("Data: " + "OFF");
+					});
+				}
+			})
+
 			function getSliderValue(value){
 				pos = value;
 				servo_pos.innerHTML = value;
 			}
 			
-			function toggleArmButtonText(){
-				text_val = toggle_text.innerText;
-				if (text_val == "ON"){
-					text_val = "OFF";
-				} else {
-					text_val = "ON";
-				}
-				toggle_text.innerText = text_val;
-			}
 			//needle-pos-request
 			$(document).ready(function(){
 			  $("#needle_pos_button").click(function(){
-				$.get("?needlevalue=" + pos + "&", function(data, status){
-				  alert("Data: " + pos);
-				});
-			  });
+				if ($('#pause_button').attr('src') == 'https://i.ibb.co/Gd5KCBk/start.png'){
+					$.get("?needlevalue=" + pos + "&", function(data, status){
+						alert("Data: " + pos);
+					});
+				} else {
+					alert("Cant change Needle when Music is playing");
+				}});
 			});
-
-			//change arm-toggle-request
-			$(document).ready(function(){
-			  $("#toggle_button").click(function(){
-				$.get("?armstatus=" + toggle_text.innerHTML + "&", function(data, status){
-				  alert("Data: " + toggle_text.innerHTML);
-				});
-			  });
-			});	
 		</script>
 	</body>
 </html>
