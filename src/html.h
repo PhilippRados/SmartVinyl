@@ -1,7 +1,12 @@
 const char index_html[]  = R"rawliteral(
 
 
+
 <html>
+	<head>
+		<title>Smart Vinyl</title>
+		<link rel="shortcut icon" type="image/png" href="https://pngimg.com/uploads/vinyl/vinyl_PNG105.png"/>
+	</head>
 	<style>
 		body {
 			display: flex;
@@ -15,6 +20,15 @@ const char index_html[]  = R"rawliteral(
 			background-repeat: no-repeat;
 			background-size: cover;
 		}
+		#needle_pos_button{
+			height: 5%;
+			width: 100%;
+			font-size: 120%;
+			border-radius: 8px;
+			background-color: white;
+			box-shadow: 3px 3px grey;
+			margin-bottom: 4%;
+		}
 		.container{
 			position: relative;
 			height:100%;
@@ -27,8 +41,8 @@ const char index_html[]  = R"rawliteral(
 			transform:rotate(180deg);
 		}
 		#myRange::-webkit-slider-thumb{
-			height: 100px;
-			width: 60px;
+			height: 130px;
+			width: 80px;
 			border-radius: 3px;
 			background-color: transparent;
 			background: url("https://i.ibb.co/DCvbp96/cartridge.png") center no-repeat;
@@ -74,13 +88,13 @@ const char index_html[]  = R"rawliteral(
 	</style>
 	<body>
 		<div class="container">
-			<input type="range" min="123" max="169" value="123" class="slider" id="myRange" onchange=getSliderValue(this.value)>
+			<input type="range" min="115" max="153" value="115" class="slider" id="myRange" onchange=getSliderValue(this.value)>
 			<img src="https://i.ibb.co/J7SJ1jF/vinyl.png" id="vinyl">
 		</div>
 		<div class="right-container">
 			<div class="form">			
-				<h1>Value: <span id="servoPos">123</span></h1>
-				<button type="button" id="needle_pos_button">Change Needle Pos</button>
+				<h1>Value: <span id="servoPos">115</span></h1>
+				<button type="button" id="needle_pos_button">Move Needle</button>
 				<h3>Current Arm-status</h3>
 				<img src="https://i.ibb.co/Gd5KCBk/start.png" id="pause_button">
 			</div>
@@ -88,7 +102,7 @@ const char index_html[]  = R"rawliteral(
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script>
 			servo_pos = document.getElementById("servoPos");
-			toggle_text = document.getElementById("toggleText");
+			pos = "115";
 
 			$('#pause_button').click(function(){
 				if ($('#pause_button').attr('src') == 'https://i.ibb.co/Gd5KCBk/start.png'){

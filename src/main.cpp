@@ -38,25 +38,6 @@ void setup_wifi(){
   Serial.println(WiFi.localIP());
 }
 
-void sendRequestAnwser(WiFiClient client){
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-type:text/html");
-  client.println("Connection: close");
-  client.println();
-  client.print(index_html);
-}
-
-void setup(){
-  Serial.begin(9600);
-  needle_slider_pull_servo.attach(NEEDLE_SERVO_PIN_PULL);
-  needle_slider_push_servo.attach(NEEDLE_SERVO_PIN_PUSH);
-  switch_servo_up.attach(SWITCH_SERVO_PIN_UP);
-  switch_servo_down.attach(SWITCH_SERVO_PIN_DOWN);
-
-  setup_wifi();
-  server.begin();
-}
-
 void moveArmToggleServo(String toggle_state){
   int start_value_switch_down = 0;
   int start_value_switch_up = 180;
@@ -77,6 +58,7 @@ void moveArmToggleServo(String toggle_state){
       switch_servo_down.write(current_value);
       delay(15);
     }
+    delay(100);
   } else if (toggle_state == "OFF") {
 
     //switch_servo_up.write(end_pos_down);
@@ -93,6 +75,28 @@ void moveArmToggleServo(String toggle_state){
     delay(100);
   }
 }
+
+void sendRequestAnwser(WiFiClient client){
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-type:text/html");
+  client.println("Connection: close");
+  client.println();
+  client.print(index_html);
+}
+
+void setup(){
+  Serial.begin(9600);
+  needle_slider_pull_servo.attach(NEEDLE_SERVO_PIN_PULL);
+  needle_slider_push_servo.attach(NEEDLE_SERVO_PIN_PUSH);
+  switch_servo_up.attach(SWITCH_SERVO_PIN_UP);
+  switch_servo_down.attach(SWITCH_SERVO_PIN_DOWN);
+
+  setup_wifi();
+  server.begin();
+
+  moveArmToggleServo("OFF");
+}
+
 
 void moveServoToValue(int servo_pos){
   //move needle to start
@@ -123,7 +127,7 @@ void moveServoToValue(int servo_pos){
   }
   delay(100);
 
-  for (int current_value = moving_pos; current_value < start_value_servo_push; current_value++){
+  for (int current_value = moving_pos; current_value < start_value_servo_push; current_value+=4){
     needle_slider_push_servo.write(current_value);
     delay(15);
   }
@@ -133,10 +137,10 @@ void loop(){
   int pos1, pos2;
   WiFiClient client = server.available();
 
+
   if (client){
     Serial.println("New Client connected...");
     String header = client.readStringUntil('\r');
-
     while (client.connected()){
       sendRequestAnwser(client);
 
@@ -156,7 +160,6 @@ void loop(){
           arm_toggle = header.substring(pos1+1,pos2);
           
           moveArmToggleServo(arm_toggle);
-          //Serial.printf("Toggle-mode :%s\n",arm_toggle);
 
         } else if (request_type = "needlevalue"){
           int servo_pos = 0;
@@ -168,12 +171,12 @@ void loop(){
           Serial.printf("slider_value: %d\n",servo_pos);
           moveServoToValue(servo_pos);
           delay(100);
-          //needle_slider_pull_servo.write(80);
 
         }
       }
       break;
     }
     client.stop();
+    Serial.println("Client disconnected");
   }
 }
