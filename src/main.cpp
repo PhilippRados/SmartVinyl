@@ -2,6 +2,7 @@
 #include <ESP32Servo.h>
 #include "WiFi.h"
 #include "html.h"
+#include "credentials.h"
 
 //servo inputs on esp32
 #define NEEDLE_SERVO_PIN_PULL 13
@@ -10,8 +11,8 @@
 #define SWITCH_SERVO_PIN_DOWN 27
 
 
-const char* ssid = "Vodafone-5B96";
-const char* password =  "TfaEhytbqapgHeqT";
+const char* ssid = wifi_name;
+const char* password =  wifi_pw;
  
 WiFiServer server(80);
 Servo needle_slider_pull_servo;
