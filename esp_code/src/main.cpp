@@ -45,7 +45,7 @@ void moveArmToggleServo(String toggle_state){
   int end_pos_down = 80;
   int end_pos_up = 40;
 
-  Serial.println("toggle");
+  Serial.println(toggle_state);
   if (toggle_state == "ON"){
     Serial.println("toggle on");
 
@@ -55,23 +55,22 @@ void moveArmToggleServo(String toggle_state){
     }
     delay(100);
 
-    for (int current_value = end_pos_up; current_value > start_value_switch_down; current_value-=4){
+    for (int current_value = end_pos_up; current_value > start_value_switch_down; current_value-=2){
       switch_servo_down.write(current_value);
-      delay(15);
+      delay(30);
     }
     delay(100);
   } else if (toggle_state == "OFF") {
+    Serial.println("toggle off");
 
-    //switch_servo_up.write(end_pos_down);
-    //switch_servo_up.write(0);
     for (int current_value = start_value_switch_up; current_value > end_pos_up; current_value--){
       switch_servo_up.write(current_value);
       delay(30);
     }
     delay(100);
-    for (int current_value = end_pos_up; current_value < start_value_switch_up; current_value+= 4){
+    for (int current_value = end_pos_up; current_value < start_value_switch_up; current_value+= 2){
       switch_servo_up.write(current_value);
-      delay(15);
+      delay(30);
     }
     delay(100);
   }
@@ -82,7 +81,7 @@ void sendRequestAnwser(WiFiClient client){
   client.println("Content-type:text/html");
   client.println("Connection: close");
   client.println();
-  client.print(index_html);
+  //client.print(index_html);
 }
 
 void setup(){
@@ -98,16 +97,10 @@ void setup(){
   moveArmToggleServo("OFF");
 }
 
-
-void moveServoToValue(int servo_pos){
-  //move needle to start
+void movePullServo(){
   const int start_value_servo_pull = 0;
-  const int start_value_servo_push = 180;
-
   int end_pos = 105;
-  int moving_pos = start_value_servo_push - servo_pos; // has to be above 20
 
-  //this code didnt work inside of functions for whatever reasons so its a repetitious
   for (int current_value = start_value_servo_pull; current_value < end_pos; current_value++){
     needle_slider_pull_servo.write(current_value);
     delay(30);
@@ -115,22 +108,25 @@ void moveServoToValue(int servo_pos){
   delay(100);
 
   Serial.println("Now backwards");
-  for (int current_value = end_pos; current_value > start_value_servo_pull; current_value-= 4){
+  for (int current_value = end_pos; current_value > start_value_servo_pull; current_value--){
     needle_slider_pull_servo.write(current_value);
-    delay(15);
+    delay(30);
   }
-  delay(100);
-  
-  // Now move the second servo to the precise position
+}
+
+void movePushServoToValue(int servo_pos){
+  const int start_value_servo_push = 180;
+  int moving_pos = start_value_servo_push - servo_pos; // has to be above 20
+
   for (int current_value = start_value_servo_push; current_value > moving_pos; current_value--){
     needle_slider_push_servo.write(current_value);
     delay(30);
   }
   delay(100);
 
-  for (int current_value = moving_pos; current_value < start_value_servo_push; current_value+=4){
+  for (int current_value = moving_pos; current_value < start_value_servo_push; current_value++){
     needle_slider_push_servo.write(current_value);
-    delay(15);
+    delay(30);
   }
 }
 
@@ -153,26 +149,24 @@ void loop(){
 
         request_type = header.substring(pos1+1,pos2);
 
-        if (request_type == "armstatus"){
+        if (request_type == "arm_status"){
           String arm_toggle;
           pos1 = header.indexOf("=");
-          pos2 = header.indexOf("&");
+          pos2 = header.indexOf("%");
 
           arm_toggle = header.substring(pos1+1,pos2);
-          
           moveArmToggleServo(arm_toggle);
 
-        } else if (request_type = "needlevalue"){
+        } else if (request_type = "needle_value"){
           int servo_pos = 0;
 
           pos1 = header.indexOf("=");
-          pos2 = header.indexOf("&");
+          pos2 = header.indexOf("%");
 
           servo_pos = header.substring(pos1+1,pos2).toInt();        
           Serial.printf("slider_value: %d\n",servo_pos);
-          moveServoToValue(servo_pos);
-          delay(100);
-
+          movePullServo();
+          movePushServoToValue(servo_pos);
         }
       }
       break;
