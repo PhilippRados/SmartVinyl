@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:popup_card/popup_card.dart';
@@ -6,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:tuple/tuple.dart';
 import 'package:lottie/lottie.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -16,22 +20,7 @@ void main() {
   ));
 }
 
-List<Album> records = [
-  Album(
-      cover:
-          "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fupload.wikimedia.org%2Fwikipedia%2Fen%2Fthumb%2Fe%2Fe8%2FModerat_cover1.jpg%2F220px-Moderat_cover1.jpg&f=1&nofb=1",
-      album_name: "Moderat",
-      artist: "Uwe Wöllner",
-      mbid: "jkfhadjsk",
-      track_list: [Tuple3<dynamic, dynamic, dynamic>("intruder", "a1", 22220)]),
-  Album(
-      cover:
-          "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fupload.wikimedia.org%2Fwikipedia%2Fen%2Fthumb%2Fe%2Fe8%2FModerat_cover1.jpg%2F220px-Moderat_cover1.jpg&f=1&nofb=1",
-      album_name: "Moderat",
-      artist: "Moderat_Band",
-      mbid: "uziew",
-      track_list: [Tuple3<dynamic, dynamic, dynamic>("intruder", "a1", 22220)]),
-];
+List<Album> records = [];
 
 class MyApp extends StatefulWidget {
   // This widget is the root of your application.
@@ -40,6 +29,18 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final GlobalKey<_PopUpItemBodyState> _key = GlobalKey();
+
+  @override
+  void initState() {
+    //load records data
+    setState(() {
+      loadRecords();
+      records = records;
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -54,7 +55,7 @@ class _MyAppState extends State<MyApp> {
                 child: Text(
                   "Your Records",
                   style: TextStyle(
-                      fontSize: 38,
+                      fontSize: 36,
                       fontWeight: FontWeight.w800,
                       color: Color(0xffF6F8F8)),
                 ),
@@ -82,12 +83,13 @@ class _MyAppState extends State<MyApp> {
                             records[index].album_name,
                             style: TextStyle(
                                 color: Color(0xffE9EDF1),
-                                fontSize: 20,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w700),
                           ),
                           subtitle: Text(records[index].artist,
                               style: TextStyle(
                                 color: Color(0xffE9EDF1),
+                                fontSize: 12,
                               )),
                           leading: ClipRRect(
                             borderRadius: BorderRadius.all(Radius.circular(18)),
@@ -99,11 +101,12 @@ class _MyAppState extends State<MyApp> {
                               setState(() {
                                 records.removeAt(index);
                               });
+                              saveRecords(records);
                             },
                             icon: Icon(
                               Icons.delete_outline,
                               color: Colors.white,
-                              size: 28,
+                              size: 24,
                             ),
                           ),
                         );
@@ -129,7 +132,10 @@ class _MyAppState extends State<MyApp> {
           ),
           tag: "test",
           popUp: PopUpItem(
-            child: PopUpItemBody(),
+            child: PopUpItemBody(
+              key: _key,
+              notify_parent: refresh,
+            ),
             color: Colors.white,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -140,6 +146,12 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
     );
+  }
+
+  refresh() {
+    setState(() {
+      records = records;
+    });
   }
 }
 
@@ -156,9 +168,21 @@ class Album {
   final String artist;
   final String mbid;
   final List<Tuple3<dynamic, dynamic, dynamic>> track_list;
+
+  Map toJson() => {
+        "cover": cover,
+        "album_name": album_name,
+        "artist": artist,
+        "mbid": mbid,
+        "track_list": "[${trackListToJson(track_list)}]"
+      };
 }
 
 class PopUpItemBody extends StatefulWidget {
+  final Function() notify_parent;
+  PopUpItemBody({required Key key, required Function() this.notify_parent})
+      : super(key: key);
+
   @override
   _PopUpItemBodyState createState() => _PopUpItemBodyState();
 }
@@ -187,7 +211,7 @@ class _PopUpItemBodyState extends State<PopUpItemBody> {
           Row(
             children: [
               Container(
-                width: 305,
+                width: 255,
                 child: TextField(
                   controller: _searchController,
                   onChanged: (query) {
@@ -196,7 +220,7 @@ class _PopUpItemBodyState extends State<PopUpItemBody> {
                   decoration: InputDecoration(
                     hintText: "Artist:Album",
                   ),
-                  style: TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
               IconButton(
@@ -231,7 +255,6 @@ class _PopUpItemBodyState extends State<PopUpItemBody> {
                     if (responded_albums.length != 0) {
                       empty = false;
                       for (int i = 0; i < responded_albums.length; i++) {
-                        print(track_list[i]);
                         list_view_albums.add(Tuple3(
                             responded_albums[i], cover_list[i], track_list[i]));
                       }
@@ -248,7 +271,7 @@ class _PopUpItemBodyState extends State<PopUpItemBody> {
             ],
           ),
           Container(
-            width: 1000,
+            width: MediaQuery.of(context).size.width,
             height: 450,
             child: empty
                 ? Container(
@@ -280,26 +303,26 @@ class _PopUpItemBodyState extends State<PopUpItemBody> {
                                       ["title"],
                                   style: TextStyle(
                                       color: Colors.black,
-                                      fontSize: 18,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w800),
                                 ),
                                 subtitle: Row(
                                   children: [
                                     Container(
-                                      margin: EdgeInsets.only(right: 6),
+                                      margin: EdgeInsets.only(right: 3),
                                       child: Text(
                                         list_view_albums[index]
                                             .item1["artist-credit"][0]["name"],
                                         style: TextStyle(
                                           color:
                                               Colors.black, //Color(0xff35393D),
-                                          fontSize: 12,
+                                          fontSize: 9,
                                         ),
                                       ),
                                     ),
                                     Container(
-                                      margin: EdgeInsets.only(right: 6),
-                                      height: 15,
+                                      margin: EdgeInsets.only(right: 3),
+                                      height: 10,
                                       child: VerticalDivider(
                                         width: 6,
                                         color: Colors.black,
@@ -315,7 +338,7 @@ class _PopUpItemBodyState extends State<PopUpItemBody> {
                                       style: TextStyle(
                                         color:
                                             Colors.black, //Color(0xff35393D),
-                                        fontSize: 12,
+                                        fontSize: 9,
                                       ),
                                     ),
                                   ],
@@ -323,7 +346,6 @@ class _PopUpItemBodyState extends State<PopUpItemBody> {
                                 trailing: IconButton(
                                   onPressed: () {
                                     setState(() {
-                                      print(list_view_albums[index].item3);
                                       records.add(
                                         Album(
                                             artist: list_view_albums[index]
@@ -340,12 +362,13 @@ class _PopUpItemBodyState extends State<PopUpItemBody> {
                                                 list_view_albums[index].item3),
                                       );
                                     });
-                                    //print(records[3].track_list);
+                                    saveRecords(records);
+                                    widget.notify_parent();
                                   },
                                   icon: Icon(
                                     Icons.add,
                                     color: Color(0xff35393D),
-                                    size: 28,
+                                    size: 24,
                                   ),
                                 ),
                               );
@@ -400,9 +423,6 @@ Future trackListRequest(String mbid) async {
 
           print(song_name);
         } catch (e) {
-          // song_name = null;
-          // song_pos = null;
-          // song_length = null;
           break;
         }
         track_list.add(Tuple3<dynamic, dynamic, dynamic>(
@@ -458,4 +478,98 @@ Future musicBrainzRequest(String search_query) async {
     print("Failed to connect to album-api");
   }
   return responded_albums;
+}
+
+saveRecords(List<Album> records) async {
+  List<dynamic> json_data = [];
+
+  for (int i = 0; i < records.length; i++) {
+    json_data.add(records[i].toJson());
+  }
+
+  final file = await _localFile;
+
+  file.writeAsString(jsonEncode(json_data));
+  print(json_data);
+}
+
+loadRecords() async {
+  records.clear();
+  try {
+    final file = await _localFile;
+    final contents = await file.readAsString();
+    String cover;
+    String artist;
+    String album_name;
+    String mbid;
+    List<Tuple3<dynamic, dynamic, dynamic>> track_list = [];
+
+    dynamic record_string = json.decode(contents);
+
+    for (int record = 0; record < record_string.length; record++) {
+      cover = record_string[record]["cover"];
+      artist = record_string[record]["artist"];
+      album_name = record_string[record]["album_name"];
+      mbid = record_string[record]["mbid"];
+
+      for (int i = 0;
+          i < jsonDecode(record_string[record]["track_list"]).length;
+          i++) {
+        Song current_song =
+            Song.fromJson(jsonDecode(record_string[record]["track_list"])[i]);
+        track_list.add(Tuple3(current_song.song_name, current_song.record_side,
+            current_song.song_length));
+      }
+      records.add(Album(
+          cover: cover,
+          album_name: album_name,
+          artist: artist,
+          mbid: mbid,
+          track_list: track_list));
+    }
+  } catch (e) {
+    print(e);
+  }
+}
+
+Future<String> get _localPath async {
+  final directory = await getApplicationDocumentsDirectory();
+
+  return directory.path;
+}
+
+Future<File> get _localFile async {
+  final path = await _localPath;
+  return File('$path/json_records.json');
+}
+
+String trackListToJson(List<Tuple3<dynamic, dynamic, dynamic>> track_list) {
+  String trackString = '';
+
+  for (int i = 0; i < track_list.length; i++) {
+    String song_name = track_list[i].item1;
+    String record_side = track_list[i].item2;
+    int song_length = track_list[i].item3;
+    if (i == (track_list.length - 1)) {
+      trackString = trackString +
+          '{"song_name":"$song_name","record_side":"$record_side","song_length":$song_length}';
+    } else {
+      trackString = trackString +
+          '{"song_name":"$song_name","record_side":"$record_side","song_length":$song_length},';
+    }
+  }
+  return trackString;
+}
+
+class Song {
+  String song_name;
+  String record_side;
+  int song_length;
+
+  Song(this.song_name, this.record_side, this.song_length);
+
+  factory Song.fromJson(dynamic json) {
+    return Song(json["song_name"] as String, json["record_side"] as String,
+        json["song_length"] as int);
+  }
 }

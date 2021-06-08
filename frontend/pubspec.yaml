@@ -32,7 +32,9 @@ dependencies:
   http: ^0.13.3
   lottie: ^1.0.1
   tuple: ^2.0.0
-  
+  stop_watch_timer: ^1.2.0+1
+  path_provider: ^2.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -52,6 +54,7 @@ flutter:
   assets:
     - assets/moderat.jpg
     - assets/loading.json
+    - assets/app_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
