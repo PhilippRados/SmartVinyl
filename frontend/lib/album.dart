@@ -218,24 +218,25 @@ class _AlbumInfoState extends State<AlbumInfo> {
                         initialData: 0,
                         builder: (context, snap) {
                           final value = snap.data;
-                          // if (value ==
-                          //     TimerState(
-                          //             song_index: song_index,
-                          //             record_side: current_side_list(
-                          //                 record_sides[selectedValue],
-                          //                 widget.album_data))
-                          //         .get_start_value()) {
-                          //   //has to be accumulated length of songs
-                          //   if (song_index <
-                          //       record_side_length(record_sides[selectedValue],
-                          //           widget.album_data)) {
-                          //     setState(() {
-                          //       song_index++;
-                          //     });
-                          //   } else {
-                          //     pause_play();
-                          //   }
-                          // }
+                          if (value ==
+                              TimerState(
+                                      song_index: song_index,
+                                      record_side: current_side_list(
+                                          record_sides[selectedValue],
+                                          widget.album_data))
+                                  .get_start_value()) {
+                            //has to be accumulated length of songs
+                            if (song_index <
+                                record_side_length(record_sides[selectedValue],
+                                    widget.album_data)) {
+                              setState(() {
+                                song_index++;
+                              });
+                            } else {
+                              pause_play();
+                              print("end of record");
+                            }
+                          }
                           return LinearProgressIndicator(
                             backgroundColor: Colors.black54,
                             color: Color(0xffFC1F60),

@@ -34,11 +34,11 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     //load records data
-    setState(() {
-      loadRecords();
-      records = records;
-    });
     super.initState();
+    () async {
+      await loadRecords();
+      setState(() {});
+    }();
   }
 
   @override
@@ -73,11 +73,12 @@ class _MyAppState extends State<MyApp> {
                       itemBuilder: (context, index) {
                         return ListTile(
                           onTap: () {
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        AlbumInfo(album_data: records[index])));
+                            print(records[index].track_list);
+                            // Navigator.push(
+                            //     context,
+                            //     MaterialPageRoute(
+                            //         builder: (context) =>
+                            //             AlbumInfo(album_data: records[index])));
                           },
                           title: Text(
                             records[index].album_name,
@@ -494,6 +495,7 @@ saveRecords(List<Album> records) async {
 }
 
 loadRecords() async {
+  print("load records");
   records.clear();
   try {
     final file = await _localFile;
@@ -507,6 +509,7 @@ loadRecords() async {
     dynamic record_string = json.decode(contents);
 
     for (int record = 0; record < record_string.length; record++) {
+      track_list.clear();
       cover = record_string[record]["cover"];
       artist = record_string[record]["artist"];
       album_name = record_string[record]["album_name"];
@@ -530,6 +533,7 @@ loadRecords() async {
   } catch (e) {
     print(e);
   }
+  print(records);
 }
 
 Future<String> get _localPath async {
