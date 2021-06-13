@@ -1,8 +1,11 @@
+import 'dart:async';
+import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:smart_vinyl_app/main.dart';
 import 'package:tuple/tuple.dart';
 import 'package:stop_watch_timer/stop_watch_timer.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 
 class AlbumInfo extends StatefulWidget {
   AlbumInfo({dynamic this.album_data});
@@ -16,8 +19,8 @@ class _AlbumInfoState extends State<AlbumInfo> {
   dynamic selectedValue = 0;
   final List<String> record_sides = ["A", "B", "C", "D", "E"];
   List<Tuple3<dynamic, dynamic, dynamic>> current_record_side_list = [];
-  bool music_selected = true;
   int song_index = 0;
+  bool loading = false;
 
   final StopWatchTimer _stopWatchTimer = StopWatchTimer(
     mode: StopWatchMode.countUp,
@@ -38,16 +41,39 @@ class _AlbumInfoState extends State<AlbumInfo> {
     }
   }
 
-  void change_timer_value(int song_index) {
+  void change_timer_value(int song_index) async {
     int new_time = TimerState(
             song_index: song_index,
             record_side: current_side_list(
                 record_sides[selectedValue], widget.album_data))
         .get_start_value();
-    print(new_time);
 
-    _stopWatchTimer.onExecute.add(StopWatchExecute.reset);
+    //_starttime and _stoptime wont get set to 0 the first time
+    // _stopWatchTimer.onExecute.add(StopWatchExecute.reset);
+    await _resetTimer();
     _stopWatchTimer.setPresetSecondTime(new_time);
+  }
+
+  Future<void> _resetTimer() {
+    final completer = Completer<void>();
+
+    // Create a listener that will trigger the completer when
+    // it detects a reset event.
+    void listener(StopWatchExecute event) {
+      if (event == StopWatchExecute.reset) {
+        completer.complete();
+      }
+    }
+
+    // Add the listener to the timer's execution stream, saving
+    // the sub for cancellation
+    final sub = _stopWatchTimer.execute.listen(listener);
+
+    // Send the 'reset' action
+    _stopWatchTimer.onExecute.add(StopWatchExecute.reset);
+
+    // Cancel the sub after the future is fulfilled.
+    return completer.future.whenComplete(sub.cancel);
   }
 
   @override
@@ -151,156 +177,241 @@ class _AlbumInfoState extends State<AlbumInfo> {
                   ),
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-                  child: Container(
-                    child: ListView.builder(
-                      itemExtent: 60,
-                      itemCount: record_side_length(
-                          record_sides[selectedValue], widget.album_data),
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          onTap: () {
-                            if (_stopWatchTimer.isRunning) {
-                              print("cant change");
-                            } else {
-                              setState(() {
-                                music_selected = music_selected;
-                                song_index = index;
-                                change_timer_value(song_index);
-                              });
-                            }
-                          },
-                          title: Text(
-                            current_side_list(record_sides[selectedValue],
-                                    widget.album_data)[index]
-                                .item1,
-                            style: TextStyle(
-                                color: (index == song_index)
-                                    ? Colors.white
-                                    : Color(0xffE9EDF1),
-                                fontSize: 18,
-                                fontWeight: (index == song_index)
-                                    ? FontWeight.w800
-                                    : FontWeight.w400),
+              Container(
+                height: 359,
+                child: StreamBuilder<int>(
+                    stream: _stopWatchTimer.secondTime,
+                    initialData: 0,
+                    builder: (context, snap) {
+                      final value = snap.data;
+                      int end_value = TimerState(
+                              song_index: song_index,
+                              record_side: current_side_list(
+                                  record_sides[selectedValue],
+                                  widget.album_data))
+                          .get_end_value();
+                      if (value == end_value - 1) {
+                        if (song_index <
+                            record_side_length(record_sides[selectedValue],
+                                    widget.album_data) -
+                                1) {
+                          song_index++;
+                        } else {
+                          pause_play(); //Pause icon doesnt change
+                          print("end of record");
+                        }
+                      }
+                      return Column(
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+                              child: Container(
+                                child: ListView.builder(
+                                  itemExtent: 60,
+                                  itemCount: record_side_length(
+                                      record_sides[selectedValue],
+                                      widget.album_data),
+                                  itemBuilder: (context, index) {
+                                    return ListTile(
+                                      onTap: () {
+                                        if (_stopWatchTimer.isRunning) {
+                                          print("cant change");
+                                        } else {
+                                          setState(() {
+                                            song_index = index;
+                                            change_timer_value(song_index);
+                                          });
+                                        }
+                                      },
+                                      title: Text(
+                                        current_side_list(
+                                                record_sides[selectedValue],
+                                                widget.album_data)[index]
+                                            .item1,
+                                        style: TextStyle(
+                                            color: (index == song_index)
+                                                ? Colors.white
+                                                : Color(0xffE9EDF1),
+                                            fontSize: 18,
+                                            fontWeight: (index == song_index)
+                                                ? FontWeight.w800
+                                                : FontWeight.w400),
+                                      ),
+                                      trailing: Text(
+                                        convert_length_to_mins(
+                                            current_side_list(
+                                                    record_sides[selectedValue],
+                                                    widget.album_data)[index]
+                                                .item3),
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 17,
+                                            letterSpacing: 1.5),
+                                      ),
+                                    );
+                                  },
+                                  key: UniqueKey(),
+                                ),
+                              ),
+                            ),
                           ),
-                          trailing: Text(
-                            convert_length_to_mins(current_side_list(
-                                    record_sides[selectedValue],
-                                    widget.album_data)[index]
-                                .item3),
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                letterSpacing: 1.5),
+                          AnimatedContainer(
+                            height: 55,
+                            width: MediaQuery.of(context).size.width,
+                            curve: Curves.decelerate,
+                            color: Color(0xff0F1821),
+                            alignment: Alignment.bottomCenter,
+                            duration: Duration(milliseconds: 300),
+                            child: Column(
+                              children: [
+                                Container(
+                                  alignment: Alignment.topCenter,
+                                  child: Stack(
+                                    children: [
+                                      LinearProgressIndicator(
+                                        backgroundColor: Colors.black54,
+                                        color: Color(0xffFC1F60),
+                                        value: TimerState(
+                                                current_time_sec: value!,
+                                                song_index: song_index,
+                                                record_side: current_side_list(
+                                                    record_sides[selectedValue],
+                                                    widget.album_data))
+                                            .get_value_progress(),
+                                      ),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                left: 18.0, top: 2),
+                                            child: Text(
+                                              current_side_list(
+                                                          record_sides[
+                                                              selectedValue],
+                                                          widget.album_data)[
+                                                      song_index]
+                                                  .item1,
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: 1.15),
+                                            ),
+                                          ),
+                                          Spacer(),
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 2),
+                                            child: IconButton(
+                                                onPressed: () async {
+                                                  if (song_index > 0) {
+                                                    setState(() {
+                                                      song_index--;
+                                                      changeSongRequest(
+                                                          song_index);
+                                                    });
+                                                  }
+                                                },
+                                                icon: Icon(
+                                                  Icons.skip_previous,
+                                                  color: Colors.white,
+                                                )),
+                                          ),
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 2),
+                                            child: IconButton(
+                                              onPressed: () async {
+                                                setState(() {
+                                                  loading = !loading;
+                                                  // (loading)
+                                                  //     ? context.loaderOverlay
+                                                  //         .show()
+                                                  //     : context.loaderOverlay
+                                                  //         .hide();
+                                                });
+                                                bool success =
+                                                    await pausePlayRequest(
+                                                        (_stopWatchTimer
+                                                                    .isRunning ==
+                                                                true)
+                                                            ? "OFF"
+                                                            : "ON");
+
+                                                if (success == true) {
+                                                  setState(() {
+                                                    pause_play();
+                                                    loading = !loading;
+                                                  });
+                                                } else {
+                                                  loading = !loading;
+                                                  AlertDialog(
+                                                      semanticLabel:
+                                                          "Couldnt send request");
+                                                }
+                                              },
+                                              //   (loading)
+                                              //       ? context.loaderOverlay
+                                              //           .show()
+                                              //       : context.loaderOverlay
+                                              //           .hide();
+                                              // },
+                                              icon: Icon(
+                                                  (_stopWatchTimer.isRunning)
+                                                      ? Icons.pause
+                                                      : Icons.play_arrow,
+                                                  color: Colors.white),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 2),
+                                            child: IconButton(
+                                                onPressed: () {
+                                                  if (song_index <
+                                                      record_side_length(
+                                                              record_sides[
+                                                                  selectedValue],
+                                                              widget
+                                                                  .album_data) -
+                                                          1) {
+                                                    setState(() {
+                                                      song_index++;
+                                                    });
+                                                  }
+                                                },
+                                                icon: Icon(
+                                                  Icons.skip_next,
+                                                  color: Colors.white,
+                                                )),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      },
-                      key: UniqueKey(),
-                    ),
-                  ),
-                ),
-              ),
-              AnimatedContainer(
-                height: music_selected ? 55 : 0,
-                width: MediaQuery.of(context).size.width,
-                curve: Curves.decelerate,
-                color: Color(0xff0F1821),
-                alignment: Alignment.bottomCenter,
-                duration: Duration(milliseconds: 300),
-                child: Column(
-                  children: [
-                    Container(
-                      alignment: Alignment.topCenter,
-                      child: StreamBuilder<int>(
-                        stream: _stopWatchTimer.secondTime,
-                        initialData: 0,
-                        builder: (context, snap) {
-                          final value = snap.data;
-                          if (value ==
-                              TimerState(
-                                      song_index: song_index,
-                                      record_side: current_side_list(
-                                          record_sides[selectedValue],
-                                          widget.album_data))
-                                  .get_start_value()) {
-                            //has to be accumulated length of songs
-                            if (song_index <
-                                record_side_length(record_sides[selectedValue],
-                                    widget.album_data)) {
-                              setState(() {
-                                song_index++;
-                              });
-                            } else {
-                              pause_play();
-                              print("end of record");
-                            }
-                          }
-                          return LinearProgressIndicator(
-                            backgroundColor: Colors.black54,
-                            color: Color(0xffFC1F60),
-                            value: TimerState(
-                                    current_time_sec: value!,
-                                    song_index: song_index,
-                                    record_side: current_side_list(
-                                        record_sides[selectedValue],
-                                        widget.album_data))
-                                .get_value_progress(),
-                          );
-                        },
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 18.0),
-                          child: Text(
-                            current_side_list(record_sides[selectedValue],
-                                    widget.album_data)[song_index]
-                                .item1,
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.15),
-                          ),
-                        ),
-                        Spacer(),
-                        IconButton(
-                            onPressed: () {},
-                            icon: Icon(
-                              Icons.skip_previous,
-                              color: Colors.white,
-                            )),
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              pause_play();
-                            });
-                          },
-                          icon: Icon(
-                              (_stopWatchTimer.isRunning)
-                                  ? Icons.pause
-                                  : Icons.play_arrow,
-                              color: Colors.white),
-                        ),
-                        IconButton(
-                            onPressed: () {},
-                            icon: Icon(
-                              Icons.skip_next,
-                              color: Colors.white,
-                            )),
-                      ],
-                    )
-                  ],
-                ),
+                        ],
+                      );
+                    }),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+}
+
+class LoadingAnimation extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container();
   }
 }
 
@@ -365,7 +476,6 @@ List<DropdownMenuItem> get_record_sides(Album album_data) {
       return record_sides_widgets;
     }
   }
-  return record_sides_widgets;
 }
 
 class TimerState {
@@ -393,4 +503,28 @@ class TimerState {
     return (current_time_sec - get_start_value()) /
         (get_end_value() - get_start_value());
   }
+}
+
+Future<bool> pausePlayRequest(String change_to) async {
+  String url = "";
+  if (change_to == "Pause") {
+    url = "192.168.0.158?arm_status=OFF%";
+  } else if (change_to == "Play") {
+    url = "192.168.0.158?arm_status=ON%";
+  }
+
+  http.Response json_response = await http.get(Uri.parse(url));
+
+  if (json_response.statusCode == 200) {
+    return true;
+  }
+  return false;
+}
+
+int convertSongtimeToServoValue(int song_index) {
+  return 1;
+}
+
+Future<bool> changeSongRequest(int song_index) async {
+  return false;
 }

@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -73,12 +72,11 @@ class _MyAppState extends State<MyApp> {
                       itemBuilder: (context, index) {
                         return ListTile(
                           onTap: () {
-                            print(records[index].track_list);
-                            // Navigator.push(
-                            //     context,
-                            //     MaterialPageRoute(
-                            //         builder: (context) =>
-                            //             AlbumInfo(album_data: records[index])));
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        AlbumInfo(album_data: records[index])));
                           },
                           title: Text(
                             records[index].album_name,
@@ -491,7 +489,9 @@ saveRecords(List<Album> records) async {
   final file = await _localFile;
 
   file.writeAsString(jsonEncode(json_data));
-  print(json_data);
+  for (int i = 0; i < records.length; i++) {
+    print(json_data[i]["track_list"]);
+  }
 }
 
 loadRecords() async {
@@ -507,9 +507,8 @@ loadRecords() async {
     List<Tuple3<dynamic, dynamic, dynamic>> track_list = [];
 
     dynamic record_string = json.decode(contents);
-
     for (int record = 0; record < record_string.length; record++) {
-      track_list.clear();
+      track_list = [];
       cover = record_string[record]["cover"];
       artist = record_string[record]["artist"];
       album_name = record_string[record]["album_name"];
@@ -523,6 +522,7 @@ loadRecords() async {
         track_list.add(Tuple3(current_song.song_name, current_song.record_side,
             current_song.song_length));
       }
+      // print(track_list);
       records.add(Album(
           cover: cover,
           album_name: album_name,
@@ -533,7 +533,8 @@ loadRecords() async {
   } catch (e) {
     print(e);
   }
-  print(records);
+  print(records[0].track_list);
+  print(records[1].track_list);
 }
 
 Future<String> get _localPath async {
