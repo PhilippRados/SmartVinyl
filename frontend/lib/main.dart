@@ -533,8 +533,6 @@ loadRecords() async {
   } catch (e) {
     print(e);
   }
-  print(records[0].track_list);
-  print(records[1].track_list);
 }
 
 Future<String> get _localPath async {

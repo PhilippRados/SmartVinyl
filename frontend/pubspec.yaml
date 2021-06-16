@@ -55,7 +55,7 @@ flutter:
   assets:
     - assets/moderat.jpg
     - assets/loading.json
-    - assets/app_icon.png
+    - assets/vinyl_loading.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
