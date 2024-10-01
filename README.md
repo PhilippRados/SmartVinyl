@@ -1,3 +1,3 @@
-# Smart_Vinyl
+# SmartVinyl
 I thought I was finished with this project until I realized that every record has different lengths which are determined by the different groove-distances. I thought that that would be standardized which would allow me to infer the record-player-position just by the song-lengths. Now I have to come up with a different way to find the correct positions on any record.
 So still work in progress...
